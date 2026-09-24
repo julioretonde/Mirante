@@ -36,6 +36,8 @@ export const STYLES = {
   },
 };
 
+const PARK_STYLES = new Set(['house', 'old', 'market', 'office', 'glass', 'construction']);
+
 /** Bairros: cada lote pertence ao bairro de âncora mais próxima (Voronoi ponderado). */
 export const DISTRICTS = [
   {
@@ -136,7 +138,7 @@ function lotCoord(i, style) {
 
 /**
  * Gera a lista de prédios e marcos (guindastes). Determinística para a mesma seed.
- * @returns {{ buildings: object[], cranes: object[] }}
+ * @returns {{ buildings: object[], cranes: object[], parks: object[] }}
  */
 export function generateCityLayout(seed = config.world.seed) {
   const rnd = createRandom(seed);
@@ -166,6 +168,14 @@ export function generateCityLayout(seed = config.world.seed) {
     return false;
   };
 
+  const parks = [];
+  const insertPark = (p) => {
+    const k = key(Math.floor(p.x / CELL), Math.floor(p.z / CELL));
+    if (!grid.has(k)) grid.set(k, []);
+    grid.get(k).push(p);
+    parks.push(p);
+  };
+
   const insert = (b) => {
     const k = key(Math.floor(b.x / CELL), Math.floor(b.z / CELL));
     if (!grid.has(k)) grid.set(k, []);
@@ -185,7 +195,24 @@ export function generateCityLayout(seed = config.world.seed) {
         if (cityEdge(cx, cz) > 0.97) continue;
         const district = districtAt(cx, cz);
         if (district.style !== styleName) continue;
-        if (!rnd.chance(style.fill)) continue;
+        if (!rnd.chance(style.fill)) {
+          // Lote vazio vira praça (com grama e árvores) nos bairros de escala humana
+          if (PARK_STYLES.has(styleName) && rnd.chance(0.6)) {
+            const pw = Math.min(style.lot - 1, 30);
+            const park = { x: cx, z: cz, w: pw, d: pw, seed: rnd.int(0, 9999), district: district.id };
+            const r = pw * 0.7;
+            const ok =
+              Math.hypot(cx - towerX, cz - towerZ) > plaza + r &&
+              distanceToRoute(cx, cz) > routeClear + r * 0.75 &&
+              footprintHeights(cx, cz, pw, pw).max - footprintHeights(cx, cz, pw, pw).min < 4 &&
+              !overlaps(park);
+            if (ok) {
+              park.ground = footprintHeights(cx, cz, pw, pw).min;
+              insertPark(park);
+            }
+          }
+          continue;
+        }
 
         const w = rnd.range(style.size[0], style.size[1]);
         const d = rnd.range(style.size[0], style.size[1]);
@@ -279,5 +306,5 @@ export function generateCityLayout(seed = config.world.seed) {
     });
   }
 
-  return { buildings, cranes };
+  return { buildings, cranes, parks };
 }

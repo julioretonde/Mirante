@@ -15,8 +15,8 @@ export const config = {
   world: {
     seed: 1987,
     citySize: 800, // cidade ocupa [-400, 400] em X e Z
-    chunkSize: 200,
-    lodDistance: 520, // além disso, cada bloco da cidade usa a versão simplificada
+    chunkSize: 100,
+    lodDistance: 270, // além disso, cada bloco da cidade usa a versão simplificada
     spawn: [0, 0, 340],
     towerPosition: [0, -320], // X, Z (a base fica no ponto mais alto do vale)
     towerBaseAltitude: 40,
