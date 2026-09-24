@@ -26,6 +26,17 @@ const shots = [
   { name: 'etapa1-luz-crepusculo', query: '?view=aerea&height=470', viewport: LANDSCAPE },
   { name: 'etapa1-alta-rua', query: '?view=rua&quality=alta', viewport: LANDSCAPE },
   { name: 'etapa1-alta-noite', query: '?view=telhados&height=560&quality=alta', viewport: LANDSCAPE },
+  {
+    name: 'etapa1-voo',
+    query: '?fly=1',
+    viewport: LANDSCAPE,
+    action: async (page) => {
+      // Anda para a frente pela rua e olha um pouco para cima
+      await page.keyboard.down('KeyW');
+      await page.waitForTimeout(2500);
+      await page.keyboard.up('KeyW');
+    },
+  },
   { name: 'etapa1-debug', query: '?view=rua&debug=1', viewport: LANDSCAPE },
   { name: 'etapa1-sair', query: '?view=rua', viewport: LANDSCAPE, action: escape },
   { name: 'etapa1-retrato', query: '', viewport: PORTRAIT },

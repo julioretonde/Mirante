@@ -19,6 +19,11 @@ export default {
   'debug.height': 'Altura da luz',
   'debug.lightHeight': 'Luz',
   'debug.auto': 'Auto',
+  'debug.fly': 'Voar',
+  'debug.tour': 'Passeio',
+  'debug.menu': 'Opções',
+  'fly.hintDesktop': 'WASD anda · arraste o mouse para olhar · Espaço sobe · Q desce · Shift acelera',
+  'fly.hintTouch': 'Esquerda: mover para onde olha · Direita: arrastar para olhar',
 
   'view.rua': 'Rua',
   'view.telhados': 'Telhados',

@@ -82,3 +82,46 @@
   gap: 6px;
   margin-bottom: 8px;
 }
+
+/* Voo livre (debug) */
+.fly-stick {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  margin: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 210, 154, 0.55);
+  background: rgba(255, 210, 154, 0.12);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.fly-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(255, 158, 94, 0.55);
+  border: 2px solid rgba(255, 240, 220, 0.8);
+  transform: translate(-50%, -50%);
+}
+
+.fly-hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 14px);
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  font-size: 13px;
+  text-align: center;
+  max-width: min(560px, 90vw);
+  pointer-events: none;
+}
+
+.debug-menu-btn {
+  position: absolute;
+  top: calc(var(--safe-top) + 10px);
+  right: calc(var(--safe-right) + 10px);
+}

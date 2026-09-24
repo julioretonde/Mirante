@@ -48,7 +48,7 @@ Projeto na **raiz do repositório** (não numa subpasta `mirante/`).
                             LightingProfile  6 faixas do GDD §3 interpoladas por altura
       ui/                   base.css, Dialog (confirmação), PauseVeil
       i18n/                 index.js (t, detectLanguage), pt-BR.js, en.js
-      debug/                DebugPanel (+ debug.css)
+      debug/                DebugPanel (+ debug.css), FlyCamera (voo livre: WASD/mouse ou joystick de toque)
       player/ levels/ mechanics/ npc/ audio/   vazias por enquanto
 
 ## Comandos
@@ -56,6 +56,9 @@ Projeto na **raiz do repositório** (não numa subpasta `mirante/`).
     npm run dev            servidor Vite com --host (http://localhost:5173, ?debug=1 abre o painel)
     npm run build          build de produção (com debug)
     npm run build:release  build de release (debug removido)
+    npm run build:preview  build de prévia em dist-preview/ (abre voando + botão Opções), usado no link
+                           privado do claude.ai: https://claude.ai/artifact/JSJ3kCZtbpgMPpvh4siXXk
+                           (republicar: página em scratchpad/mirante-preview/index.html + assets/*)
     npm run validate       Vitest (+ RouteValidator a partir da Etapa 3). Deve passar antes de commit.
     npm run snapshot       capturas 844×390 em snapshots/ (falha se houver erro no console);
                            filtro: node scripts/snapshot.mjs "topo|rua"
@@ -126,6 +129,8 @@ excluídos de propósito. Se uma skill conflitar com o GDD (ex.: sugerir TypeScr
 - Sem jogador ainda, a luz segue a altitude da câmera (o slider de debug fixa uma altura). Na Etapa 2+
   passa a seguir o jogador. A névoa afina conforme a câmera sobe.
 - Cores de destaque (#FF9E5E/#F2C14E) reservadas à rota jogável: cenário usa versões dessaturadas.
+- O usuário não consegue usar o emulador: testes dele são pelo link de prévia no navegador.
+  URL de debug: ?fly=1 (voo livre), ?view=, ?height=, ?quality=, ?debug=1.
 
 ## Contexto do usuário
 

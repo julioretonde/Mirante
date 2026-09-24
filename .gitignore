@@ -12,3 +12,4 @@ Thumbs.db
 *.keystore
 keystore.properties
 android/keystore/
+dist-preview/
