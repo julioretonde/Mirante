@@ -2,18 +2,22 @@ import * as THREE from 'three';
 import { config } from '../config.js';
 import { Events } from './Events.js';
 import { Loop } from './Loop.js';
+import { PostFX } from './PostFX.js';
+import { QUALITY } from './Quality.js';
 
 export class Game {
-  constructor(canvas) {
+  constructor(canvas, quality = QUALITY.alta) {
     this.canvas = canvas;
+    this.quality = quality;
     this.events = new Events();
 
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: true,
+      antialias: quality.antialias,
       powerPreference: 'high-performance',
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, config.render.maxPixelRatio));
+    this.pixelRatio = Math.min(window.devicePixelRatio || 1, config.render.maxPixelRatio, quality.dpr);
+    this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.toneMapping = THREE.NeutralToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.shadowMap.enabled = true;
@@ -22,6 +26,7 @@ export class Game {
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(config.render.fov, 1, config.render.near, config.render.far);
+    this.post = quality.post ? new PostFX(this.renderer, this.scene, this.camera) : null;
 
     this.world = null;
     /** Sistemas atualizados antes do mundo a cada frame (câmera, jogador...). */
@@ -52,6 +57,7 @@ export class Game {
     const w = window.innerWidth;
     const h = window.innerHeight;
     this.renderer.setSize(w, h, false);
+    this.post?.setSize(w, h, this.pixelRatio);
     this.camera.aspect = w / Math.max(h, 1);
     this.camera.updateProjectionMatrix();
     this.events.emit('resize', { width: w, height: h });
@@ -79,7 +85,8 @@ export class Game {
   update(dt, t) {
     for (const system of this.systems) system.update(dt, t);
     this.world?.update(dt, t);
-    this.renderer.render(this.scene, this.camera);
+    if (this.post) this.post.render();
+    else this.renderer.render(this.scene, this.camera);
     this.events.emit('frame', { dt, t });
   }
 

@@ -39,7 +39,7 @@ export function installDebugPanel({ game, world, showcase, launches }) {
   panel.querySelector('[data-action="close"]').textContent = t('debug.close');
   panel.querySelector('[data-action="auto"]').textContent = t('debug.auto');
   const v = (name) => panel.querySelector(`[data-v="${name}"]`);
-  v('info').textContent = `${platformName} · ${Storage.backendName} · ${getLanguage()} · ${t('debug.launches')}: ${launches}`;
+  v('info').textContent = `${platformName} · ${Storage.backendName} · ${getLanguage()} · ${game.quality.name} · ${t('debug.launches')}: ${launches}`;
 
   const views = panel.querySelector('.debug-views');
   for (const name of VIEW_ORDER) {

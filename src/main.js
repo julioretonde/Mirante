@@ -1,6 +1,7 @@
 import { initPlatform, isNative, Lifecycle, KeepAwake, Storage } from './platform/index.js';
 import { detectLanguage, setLanguage, t } from './i18n/index.js';
 import { Game } from './core/Game.js';
+import { detectQuality } from './core/Quality.js';
 import { World } from './world/World.js';
 import { ShowcaseCamera } from './camera/ShowcaseCamera.js';
 import { Dialog } from './ui/Dialog.js';
@@ -36,7 +37,7 @@ async function main() {
   await Storage.set('launches', launches);
 
   const canvas = document.getElementById('game');
-  const game = new Game(canvas);
+  const game = new Game(canvas, detectQuality({ isNative }));
   const world = new World(game);
   game.setWorld(world);
   const showcase = new ShowcaseCamera(game.camera, canvas);
