@@ -9,8 +9,8 @@ Stack: Vite 8 + JavaScript (ES modules) + Three.js 0.186.0, empacotado com Capac
 
 ## Etapa atual
 
-**Etapa 0 – Fundação: concluída, aguardando feedback do usuário.**
-Próxima: Etapa 1 – Mundo visível (cidade procedural, Torre Farol detalhada, céu, fog, câmera orbitando).
+**Etapa 1 – Mundo visível: concluída, aguardando feedback do usuário.**
+Próxima: Etapa 2 – Personagem e controles (cachecol, joystick, câmera 3ª pessoa, andar/pular, vibração, teclado).
 Antes de começar cada etapa: apresentar plano curto e esperar aprovação (GDD §11).
 
 ## Estrutura de pastas
@@ -30,12 +30,20 @@ Projeto na **raiz do repositório** (não numa subpasta `mirante/`).
       config.js             todos os valores de ajuste (render, mundo, cores, jogador)
       platform/             ÚNICO acesso a APIs nativas: env, Storage, Haptics, Lifecycle,
                             Orientation, StatusBar, KeepAwake, index.js (initPlatform)
-      core/                 Game (renderer/cena/câmera), Loop, Events, Random (seed), dispose
-      world/                Sky (shader gradiente), Lighting, Tower (provisória), PreviewWorld (provisório)
+      core/                 Game (renderer/cena/câmera, systems[]), Loop, Events, Random (seed), dispose
+      camera/               ShowcaseCamera (vistas automáticas + OrbitControls; ?view=nome)
+      world/                World (compõe tudo e aplica a luz por altura)
+                            heightfield.js  terrainHeight(x,z) puro (vale em anfiteatro)
+                            cityLayout.js   layout puro: bairros/zonas, ROUTE (corredor livre), guindastes
+                            geometry.js     GeometryBuilder (prisma/caixa/viga/cone/telhado, mescla)
+                            materials.js    fachadas em canvas, janelas acesas por hash, fog reduzido da torre
+                            CityGenerator   blocos de 200 m em THREE.LOD (perto detalhado, longe caixas)
+                            Props, Terrain, Clouds, Tower (definitiva), Sky (sol/estrelas/lua), Lighting
+                            LightingProfile  6 faixas do GDD §3 interpoladas por altura
       ui/                   base.css, Dialog (confirmação), PauseVeil
       i18n/                 index.js (t, detectLanguage), pt-BR.js, en.js
       debug/                DebugPanel (+ debug.css)
-      player/ camera/ levels/ mechanics/ npc/ audio/   vazias por enquanto
+      player/ levels/ mechanics/ npc/ audio/   vazias por enquanto
 
 ## Comandos
 
@@ -43,7 +51,8 @@ Projeto na **raiz do repositório** (não numa subpasta `mirante/`).
     npm run build          build de produção (com debug)
     npm run build:release  build de release (debug removido)
     npm run validate       Vitest (+ RouteValidator a partir da Etapa 3). Deve passar antes de commit.
-    npm run snapshot       capturas 844×390 em snapshots/ (falha se houver erro no console)
+    npm run snapshot       capturas 844×390 em snapshots/ (falha se houver erro no console);
+                           filtro: node scripts/snapshot.mjs "topo|rua"
     npm run android        build + cap sync + cap run android (emulador/aparelho)
     npm run android:open   build + cap sync + abre no Android Studio
     npm run android:apk    build + cap sync + gradlew assembleDebug (checa erros de build nativo)
@@ -94,6 +103,16 @@ excluídos de propósito. Se uma skill conflitar com o GDD (ex.: sugerir TypeScr
   `npm run android:apk` antes de entregar etapas. Emulador/aparelho: no computador do usuário (Windows).
   O Chromium local roda o snapshot com SwiftShader (FPS baixo no headless é esperado).
 - versionName 1.0.0 / versionCode 1 em android/app/build.gradle.
+- **Alturas (aprovado):** 0 m = rua do nascimento; terreno sobe até 40 m ao norte; torre com base a 40 m e
+  mirante (topo jogável) a 600 m, antena até 640 m. Zona 5 = arranha-céus (maior: 224 m de prédio);
+  Zona 6 = terraços-jardim da própria torre (318/368/418 m); Zonas 7–8 = interior/exterior da torre.
+- Nomes de arquivo nunca podem diferir só por maiúsculas (Windows): por isso `heightfield.js` e `Terrain.js`.
+- Cidade: layout é dado puro testável; geometria mesclada por bloco e material (~70 draw calls, ~300k tri).
+  LOD distante usa as mesmas fachadas (janelas acendem de longe = "mar de luzes").
+- Janelas acendem por hash de (vão, andar) no shader; `windowUniforms.uLitRatio` controla a cidade toda.
+- Sem jogador ainda, a luz segue a altitude da câmera (o slider de debug fixa uma altura). Na Etapa 2+
+  passa a seguir o jogador. A névoa afina conforme a câmera sobe.
+- Cores de destaque (#FF9E5E/#F2C14E) reservadas à rota jogável: cenário usa versões dessaturadas.
 
 ## Contexto do usuário
 

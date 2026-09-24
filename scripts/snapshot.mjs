@@ -27,13 +27,25 @@ async function findChromium() {
   return undefined;
 }
 
+const escape = (page) => page.keyboard.press('Escape');
+
+// Cada captura abre o jogo numa vista fixa (?view) e, se preciso, numa altura de luz (?height).
 const shots = [
-  { name: 'etapa0-inicio', query: '', viewport: LANDSCAPE },
-  { name: 'etapa0-debug', query: '?debug=1', viewport: LANDSCAPE },
-  { name: 'etapa0-sair', query: '', viewport: LANDSCAPE, action: (page) => page.keyboard.press('Escape') },
-  { name: 'etapa0-retrato', query: '', viewport: PORTRAIT },
-  { name: 'etapa0-en', query: '', viewport: LANDSCAPE, locale: 'en-US', action: (page) => page.keyboard.press('Escape') },
+  { name: 'etapa1-rua', query: '?view=rua', viewport: LANDSCAPE },
+  { name: 'etapa1-telhados', query: '?view=telhados', viewport: LANDSCAPE },
+  { name: 'etapa1-aerea', query: '?view=aerea', viewport: LANDSCAPE },
+  { name: 'etapa1-vidro', query: '?view=vidro', viewport: LANDSCAPE },
+  { name: 'etapa1-jardins', query: '?view=jardins', viewport: LANDSCAPE },
+  { name: 'etapa1-topo', query: '?view=topo', viewport: LANDSCAPE },
+  { name: 'etapa1-luz-por-do-sol', query: '?view=aerea&height=240', viewport: LANDSCAPE },
+  { name: 'etapa1-luz-crepusculo', query: '?view=aerea&height=470', viewport: LANDSCAPE },
+  { name: 'etapa1-debug', query: '?view=rua&debug=1', viewport: LANDSCAPE },
+  { name: 'etapa1-sair', query: '?view=rua', viewport: LANDSCAPE, action: escape },
+  { name: 'etapa1-retrato', query: '', viewport: PORTRAIT },
+  { name: 'etapa1-en', query: '?view=rua', viewport: LANDSCAPE, locale: 'en-US', action: escape },
 ];
+
+const only = process.argv[2] ? new RegExp(process.argv[2]) : null;
 
 async function main() {
   await mkdir(OUT, { recursive: true });
@@ -48,7 +60,7 @@ async function main() {
 
   const errors = [];
   try {
-    for (const shot of shots) {
+    for (const shot of shots.filter((s) => !only || only.test(s.name))) {
       const context = await browser.newContext({
         viewport: shot.viewport,
         deviceScaleFactor: 2,
@@ -63,8 +75,10 @@ async function main() {
       page.on('pageerror', (err) => errors.push(`[${shot.name}] ${err.message}`));
 
       await page.goto(url + shot.query);
-      await page.waitForSelector('html[data-ready="true"]', { timeout: 30000 });
-      await page.waitForTimeout(2500);
+      await page.waitForSelector('html[data-ready="true"]', { timeout: 60000 });
+      // Espera alguns frames renderizados (o SwiftShader do headless é lento)
+      await page.waitForFunction(() => (window.__mirante?.game.loop.elapsed ?? 1) > 0.6, null, { timeout: 60000 });
+      await page.waitForTimeout(500);
       if (shot.action) {
         await shot.action(page);
         await page.waitForTimeout(400);
