@@ -37,6 +37,16 @@ export class Input {
     this._jumpHeld = false;
     this.pending = this._emptyPending();
 
+    // Celulares e tablets: já reserva o espaço dos botões desde o início.
+    try {
+      if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
+        this.touchSeen = true;
+        this.display.setTouchUI(true);
+      }
+    } catch {
+      /* ignora */
+    }
+
     this._bind();
   }
 

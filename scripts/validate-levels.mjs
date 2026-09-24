@@ -330,7 +330,6 @@ function screenDifficulty(s) {
           // reconstrói a rota (sequência de plataformas e janelas)
           const route = [{ id: t, win: list[k + 1] }];
           let cur = from;
-          let winIn = list[k + 1];
           while (cur !== null) {
             const pr = parent.get(cur);
             route.unshift({ id: cur, win: pr ? pr.win : null });
@@ -421,7 +420,6 @@ if (MAP_SCREEN) {
 const LINKS_SCREEN = argVal('--links') ? Number(argVal('--links')) : null;
 if (LINKS_SCREEN) {
   const s = LINKS_SCREEN - 1;
-  const top = world.screenTopRow(s);
   const platName = (p) => {
     if (p === -1) return 'ESTRELA';
     const r = Math.floor(p / 64);

@@ -170,7 +170,7 @@ export function drawControls(ctx, mode, h, pressed) {
 
 // ------------------------------------------------------------------ debug ---
 export function drawDebug(ctx, g) {
-  const { world, player, screen, fps, frame } = g;
+  const { world, player, screen, fps } = g;
   const camTop = world.screenTopY(screen);
   const OX = WORLD_X_OFFSET;
   // tiles sólidos da tela
@@ -223,5 +223,4 @@ export function drawDebug(ctx, g) {
   // botões de teleporte
   text(ctx, '<T', UI_REGIONS.dbgPrev.x + 4, 4, 15, { outline: 0 });
   text(ctx, 'T>', UI_REGIONS.dbgNext.x + 4, 4, 15, { outline: 0 });
-  void frame;
 }

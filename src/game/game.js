@@ -425,7 +425,6 @@ export class Game {
   }
 
   _onEvent(ev) {
-    const pl = this.player;
     switch (ev.type) {
       case 'chargeStart':
         this.audio.chargeStart((P.CHARGE_FRAMES / 60) * 1.02);
@@ -457,7 +456,6 @@ export class Game {
       default:
         break;
     }
-    void pl;
   }
 
   // --------------------------------------------------------------- final ----
@@ -515,7 +513,7 @@ export class Game {
     this.view.drawAnimated(ctx, s, this.frame, this.star);
     this.particles.draw(ctx, camTop, OX, 'back');
     const showPlayer = this.state !== 'endScreen';
-    if (showPlayer) this._drawPlayer(ctx, camTop, alpha, s);
+    if (showPlayer) this._drawPlayer(ctx, camTop, alpha);
     this.particles.draw(ctx, camTop, OX, 'front');
     ctx.restore();
 
@@ -598,7 +596,7 @@ export class Game {
     drawTopButtons(ctx, this.settings.muted);
   }
 
-  _drawPlayer(ctx, camTop, alpha, s) {
+  _drawPlayer(ctx, camTop, alpha) {
     const pl = this.player;
     const b = pl.body;
     let x = pl.prevX + (b.x - pl.prevX) * alpha;
@@ -618,7 +616,6 @@ export class Game {
     const px = Math.round(OX + x) - (flip ? KNIGHT_W - P.PLAYER_W - KNIGHT_OFFSET_X : KNIGHT_OFFSET_X) + dx;
     const py = Math.round(y + P.PLAYER_H - camTop) - 16;
     ctx.drawImage(sprite(KNIGHT_FRAMES[name], flip), px, py);
-    void s;
   }
 }
 
