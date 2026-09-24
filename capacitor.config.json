@@ -1,0 +1,23 @@
+{
+  "appId": "com.ascenda.jogo",
+  "appName": "Ascenda",
+  "webDir": "dist",
+  "backgroundColor": "#120e1c",
+  "loggingBehavior": "none",
+  "android": {
+    "backgroundColor": "#120e1c",
+    "allowMixedContent": false
+  },
+  "ios": {
+    "backgroundColor": "#120e1c",
+    "contentInset": "never",
+    "scrollEnabled": false
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover",
+      "hidden": true
+    }
+  }
+}

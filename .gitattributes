@@ -1,0 +1,12 @@
+# Atalhos de clique duplo: finais de linha corretos em cada sistema
+*.bat      text eol=crlf
+*.command  text eol=lf
+*.sh       text eol=lf
+*.mjs      text eol=lf
+*.js       text eol=lf
+
+# Binários
+*.png      binary
+
+# Arquivo gerado (npm run build:single)
+jogo.html  linguist-generated=true -diff

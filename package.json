@@ -15,11 +15,11 @@
     "preview": "vite preview --host",
     "validate-levels": "node scripts/validate-levels.mjs",
     "icons": "node scripts/gen-icons.mjs",
-    "cap:sync": "npm run build && npx cap sync",
-    "android:add": "npm run build && npx cap add android && npx cap sync android",
-    "android:open": "npm run build && npx cap sync android && npx cap open android",
-    "ios:add": "npm run build && npx cap add ios && npx cap sync ios",
-    "ios:open": "npm run build && npx cap sync ios && npx cap open ios"
+    "cap:sync": "npm run build && npx cap sync && node scripts/cap-native-setup.mjs",
+    "android:add": "npm run build && npx cap add android && node scripts/cap-native-setup.mjs && npx cap sync android",
+    "android:open": "npm run build && npx cap sync android && node scripts/cap-native-setup.mjs && npx cap open android",
+    "ios:add": "npm run build && npx cap add ios && node scripts/cap-native-setup.mjs && npx cap sync ios",
+    "ios:open": "npm run build && npx cap sync ios && node scripts/cap-native-setup.mjs && npx cap open ios"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
