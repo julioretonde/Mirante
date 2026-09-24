@@ -1,0 +1,53 @@
+.debug-panel {
+  position: absolute;
+  top: calc(var(--safe-top) + 10px);
+  left: calc(var(--safe-left) + 10px);
+  min-width: 190px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.debug-panel h2 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--lantern);
+}
+
+.debug-panel dl {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0 12px;
+  margin: 0 0 8px;
+}
+
+.debug-panel dt {
+  color: var(--ink-soft);
+}
+
+.debug-panel dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.debug-panel .actions {
+  display: flex;
+  gap: 8px;
+}
+
+.debug-panel .lantern-btn {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* Área invisível do toque triplo no canto superior esquerdo */
+.debug-hotspot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(var(--safe-left) + 64px);
+  height: calc(var(--safe-top) + 64px);
+}
