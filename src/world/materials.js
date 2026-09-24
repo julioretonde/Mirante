@@ -1,138 +1,97 @@
 import * as THREE from 'three';
 import { config } from '../config.js';
+import { SLOT, createAtlasTextures } from './atlas.js';
 
 /**
- * Biblioteca de materiais da cidade. Texturas de fachada são desenhadas em canvas (nada externo).
- * Cada textura é 1 vão × 1 andar; as UVs das paredes estão em vãos/andares, então repetem em escala real.
- * O branco da textura é tingido pela cor do vértice (cor do prédio).
+ * Materiais do mundo. A cidade inteira (prédios, telhados, calçadas, props) usa UM material
+ * com o atlas de texturas: cada vértice escolhe a região (atributo `atlas` = [região, escala])
+ * e o shader repete a região com fract(). Resultado: um draw call por bloco da cidade.
  */
 
-/** Uniforms compartilhados por todas as janelas: um ajuste acende a cidade inteira. */
+/** Uniforms compartilhados: um ajuste acende a cidade inteira. */
 export const windowUniforms = {
   uLitRatio: { value: 0 },
+  /** Cor do céu refletida pelas fachadas de vidro (atualizada pela luz por altura). */
+  uSkyReflect: { value: new THREE.Color('#ffd6b0') },
 };
 
-const TILE = 128;
+const GRID = 4.0;
+const INSET = 4 / 256; // margem dentro de cada região (evita sangrar a vizinha nos mipmaps)
 
-function canvasTexture(draw, { srgb = true, maxAnisotropy = 4 } = {}) {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = TILE;
-  const ctx = canvas.getContext('2d');
-  draw(ctx, TILE);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-  tex.anisotropy = maxAnisotropy;
-  return tex;
-}
+/** Injeta o atlas, o toldo listrado, as janelas acesas por hash e (opcional) fog reduzido. */
+function atlasMaterial({ fogScale = 1, maps }) {
+  const mat = new THREE.MeshLambertMaterial({
+    map: maps.map,
+    emissiveMap: maps.emissiveMap,
+    emissive: new THREE.Color(config.colors.windowGlow),
+    emissiveIntensity: 0,
+    vertexColors: true,
+  });
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uLitRatio = windowUniforms.uLitRatio;
+    shader.uniforms.uSkyReflect = windowUniforms.uSkyReflect;
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        '#include <common>',
+        '#include <common>\nattribute vec2 atlas;\nvarying vec2 vAtlas;\nvarying vec2 vCityUv;',
+      )
+      .replace('#include <uv_vertex>', '#include <uv_vertex>\nvAtlas = atlas;\nvCityUv = uv;');
 
-/** Desenha parede + janela; `mask` desenha só a área que acende à noite. */
-const FACADES = {
-  house(ctx, s, mask) {
-    ctx.fillStyle = mask ? '#000' : '#fbf7f1';
-    ctx.fillRect(0, 0, s, s);
-    if (!mask) {
-      ctx.fillStyle = '#ece4da';
-      ctx.fillRect(0, 0, s, 5); // linha do piso
-      ctx.fillStyle = '#b6c7bd';
-      ctx.fillRect(s * 0.2, s * 0.24, s * 0.1, s * 0.52); // venezianas
-      ctx.fillRect(s * 0.7, s * 0.24, s * 0.1, s * 0.52);
-      ctx.fillStyle = '#fffaf2';
-      ctx.fillRect(s * 0.29, s * 0.22, s * 0.42, s * 0.56); // moldura
-    }
-    ctx.fillStyle = mask ? '#fff' : '#4b4f63';
-    ctx.fillRect(s * 0.33, s * 0.26, s * 0.34, s * 0.48);
-    if (!mask) {
-      ctx.fillStyle = '#e9e0d4';
-      ctx.fillRect(s * 0.26, s * 0.74, s * 0.48, s * 0.05); // peitoril
-    }
-  },
-  old(ctx, s, mask) {
-    ctx.fillStyle = mask ? '#000' : '#fbf7f1';
-    ctx.fillRect(0, 0, s, s);
-    if (!mask) {
-      ctx.fillStyle = '#e8dfd3';
-      ctx.fillRect(0, 0, s, 7);
-      ctx.fillStyle = '#fffaf3';
-      ctx.fillRect(s * 0.27, s * 0.14, s * 0.46, s * 0.7);
-    }
-    ctx.fillStyle = mask ? '#fff' : '#474b5e';
-    ctx.fillRect(s * 0.31, s * 0.19, s * 0.38, s * 0.6);
-    if (!mask) {
-      ctx.fillStyle = '#fbf7f1';
-      ctx.fillRect(s * 0.49, s * 0.19, s * 0.02, s * 0.6); // divisória
-      ctx.fillStyle = '#6d6a70';
-      ctx.fillRect(s * 0.22, s * 0.8, s * 0.56, s * 0.04); // grade da sacada
-      for (let i = 0; i < 7; i++) ctx.fillRect(s * (0.23 + i * 0.08), s * 0.8, 2, s * 0.12);
-    }
-  },
-  office(ctx, s, mask) {
-    ctx.fillStyle = mask ? '#000' : '#f7f5f1';
-    ctx.fillRect(0, 0, s, s);
-    ctx.fillStyle = mask ? '#fff' : '#56617a';
-    ctx.fillRect(0, s * 0.3, s, s * 0.46);
-    if (!mask) {
-      ctx.fillStyle = '#e6e2dc';
-      ctx.fillRect(0, s * 0.3, 4, s * 0.46); // montante
-      ctx.fillStyle = '#7c89a3';
-      ctx.fillRect(0, s * 0.3, s, 4);
-    }
-  },
-  glass(ctx, s, mask) {
-    if (mask) {
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, s, s);
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(s * 0.06, s * 0.12, s * 0.88, s * 0.76);
-      return;
-    }
-    const g = ctx.createLinearGradient(0, s, 0, 0);
-    g.addColorStop(0, '#9fb3c4');
-    g.addColorStop(0.55, '#e9f1f4');
-    g.addColorStop(1, '#c9d9e3');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, s, s);
-    ctx.fillStyle = '#f4f1ec';
-    ctx.fillRect(0, 0, s, s * 0.08); // laje
-    ctx.fillRect(0, 0, s * 0.05, s); // montante
-  },
-  // Coração da Torre: janelões altos (GDD §7, Zona 7)
-  heart(ctx, s, mask) {
-    ctx.fillStyle = mask ? '#000' : '#fbf6ee';
-    ctx.fillRect(0, 0, s, s);
-    ctx.fillStyle = mask ? '#fff' : '#4d5068';
-    ctx.fillRect(s * 0.14, s * 0.1, s * 0.72, s * 0.82);
-    if (!mask) {
-      ctx.fillStyle = '#d7b98a'; // caixilho de latão
-      ctx.fillRect(s * 0.48, s * 0.1, s * 0.04, s * 0.82);
-      ctx.fillRect(s * 0.14, s * 0.5, s * 0.72, s * 0.03);
-    }
-  },
-};
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        /* glsl */ `#include <common>
+        uniform float uLitRatio;
+        uniform vec3 uSkyReflect;
+        varying vec2 vAtlas;
+        varying vec2 vCityUv;
+        vec2 atlasUv(vec2 cellUv, out vec2 ddx, out vec2 ddy) {
+          float slot = vAtlas.x;
+          vec2 origin = vec2(mod(slot, ${GRID.toFixed(1)}), floor(slot / ${GRID.toFixed(1)})) / ${GRID.toFixed(1)};
+          float span = (1.0 - 2.0 * ${INSET.toFixed(5)}) / ${GRID.toFixed(1)};
+          ddx = dFdx(cellUv) * span;
+          ddy = dFdy(cellUv) * span;
+          return origin + ${INSET.toFixed(5)} / ${GRID.toFixed(1)} + fract(cellUv) * span;
+        }`,
+      )
+      .replace(
+        '#include <map_fragment>',
+        /* glsl */ `
+        vec2 cellUv = vCityUv * vAtlas.y;
+        vec2 aDx, aDy;
+        vec2 aUv = atlasUv(cellUv, aDx, aDy);
+        diffuseColor *= textureGrad( map, aUv, aDx, aDy );`,
+      )
+      .replace(
+        '#include <color_fragment>',
+        /* glsl */ `
+        if ( abs( vAtlas.x - ${SLOT.stripes.toFixed(1)} ) < 0.5 ) {
+          float stripe = step( 0.5, fract( vCityUv.x ) );
+          diffuseColor.rgb *= mix( vec3( 0.98, 0.96, 0.92 ), vColor.rgb, stripe );
+        } else {
+          diffuseColor.rgb *= vColor.rgb;
+        }`,
+      )
+      .replace(
+        '#include <emissivemap_fragment>',
+        /* glsl */ `
+        {
+          vec3 mask = textureGrad( emissiveMap, aUv, aDx, aDy ).rgb;
+          vec2 cellId = floor( vCityUv + 0.0001 ) + vec2( vAtlas.x * 17.0, 0.0 );
+          float h = fract( sin( dot( cellId, vec2( 12.9898, 78.233 ) ) ) * 43758.5453 );
+          bool always = abs( vAtlas.x - ${SLOT.lamp.toFixed(1)} ) < 0.5;
+          // Vidro acende menos (janelas grandes: poucas bastam para ler "escritório à noite")
+          float ratio = uLitRatio * ( abs( vAtlas.x - ${SLOT.glass.toFixed(1)} ) < 0.5 ? 0.55 : 1.0 );
+          float lit = always ? 1.4 : step( 1.0 - ratio, h ) * ( 0.55 + 0.6 * fract( h * 7.13 ) );
+          totalEmissiveRadiance *= mask * lit;
+          // Vidro espelhado: reflete o céu, mais forte em ângulos rasantes (Fresnel)
+          if ( abs( vAtlas.x - ${SLOT.glass.toFixed(1)} ) < 0.5 ) {
+            float fres = pow( 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) ), 2.5 );
+            totalEmissiveRadiance += uSkyReflect * ( 0.1 + 0.55 * fres ) * ( 1.0 - lit * mask.r );
+          }
+        }`,
+      );
 
-/**
- * Injeta no shader: (1) janelas acesas por vão/andar via hash (cada janela decide sozinha),
- * (2) escala de fog (a torre recebe menos névoa para nunca sumir).
- */
-function patch(material, { windows = false, fogScale = 1 } = {}) {
-  if (!windows && fogScale === 1) return material;
-  material.onBeforeCompile = (shader) => {
-    if (windows) {
-      shader.uniforms.uLitRatio = windowUniforms.uLitRatio;
-      shader.fragmentShader = shader.fragmentShader
-        .replace('#include <common>', '#include <common>\nuniform float uLitRatio;')
-        .replace(
-          '#include <emissivemap_fragment>',
-          /* glsl */ `
-          #ifdef USE_EMISSIVEMAP
-            vec4 emissiveColor = texture2D( emissiveMap, vEmissiveMapUv );
-            vec2 cellId = floor( vEmissiveMapUv + 0.0001 );
-            float h = fract( sin( dot( cellId, vec2( 12.9898, 78.233 ) ) ) * 43758.5453 );
-            float lit = step( 1.0 - uLitRatio, h );
-            totalEmissiveRadiance *= emissiveColor.rgb * lit * ( 0.7 + 0.6 * fract( h * 7.13 ) );
-          #endif`,
-        );
-    }
     if (fogScale !== 1) {
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <fog_fragment>',
@@ -144,74 +103,70 @@ function patch(material, { windows = false, fogScale = 1 } = {}) {
       );
     }
   };
-  material.customProgramCacheKey = () => `mirante:${windows ? 'w' : ''}:${fogScale}`;
-  return material;
-}
-
-function facadeMaterial(kind, maxAnisotropy, extra = {}) {
-  const draw = FACADES[kind];
-  const map = canvasTexture((ctx, s) => draw(ctx, s, false), { maxAnisotropy });
-  const emissiveMap = canvasTexture((ctx, s) => draw(ctx, s, true), { maxAnisotropy });
-  const mat = new THREE.MeshLambertMaterial({
-    map,
-    emissiveMap,
-    emissive: new THREE.Color(config.colors.windowGlow),
-    emissiveIntensity: 0,
-    vertexColors: true,
-  });
-  return patch(mat, { windows: true, ...extra });
-}
-
-/** Toldo listrado: alterna branco e a cor do vértice (UV.x em larguras de listra). */
-function stripedMaterial(maxAnisotropy) {
-  const mat = new THREE.MeshLambertMaterial({
-    vertexColors: true,
-    side: THREE.DoubleSide,
-    map: canvasTexture(
-      (ctx, s) => {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, s, s);
-      },
-      { maxAnisotropy },
-    ),
-  });
-  mat.onBeforeCompile = (shader) => {
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <color_fragment>',
-      /* glsl */ `
-      #if defined( USE_COLOR )
-        float stripe = step( 0.5, fract( vMapUv.x ) );
-        diffuseColor.rgb *= mix( vec3( 0.98, 0.96, 0.92 ), vColor.rgb, stripe );
-      #endif`,
-    );
-  };
-  mat.customProgramCacheKey = () => 'mirante:stripes';
+  mat.customProgramCacheKey = () => `mirante-atlas:${fogScale}`;
   return mat;
 }
 
+function fogScaled(material, fogScale) {
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <fog_fragment>',
+      /* glsl */ `
+      #ifdef USE_FOG
+        float fogFactor = smoothstep( fogNear, fogFar, vFogDepth * ${fogScale.toFixed(3)} );
+        gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor );
+      #endif`,
+    );
+  };
+  material.customProgramCacheKey = () => `mirante-fog:${fogScale}`;
+  return material;
+}
+
+/** Textura de chão: manchas suaves e grão, funciona para calçamento e grama. */
+function groundTexture(maxAnisotropy) {
+  const s = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = s;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, s, s);
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 40; i++) {
+    const x = rnd() * s;
+    const y = rnd() * s;
+    const r = 10 + rnd() * 40;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    const dark = rnd() < 0.5;
+    g.addColorStop(0, dark ? 'rgba(60,50,40,0.05)' : 'rgba(255,255,240,0.08)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    // Desenha com wrap para a textura repetir sem costura
+    for (const dx of [-s, 0, s]) for (const dy of [-s, 0, s]) ctx.fillRect(x + dx - r, y + dy - r, r * 2, r * 2);
+  }
+  for (let i = 0; i < 3000; i++) {
+    ctx.fillStyle = rnd() < 0.5 ? 'rgba(60,50,40,0.07)' : 'rgba(255,255,255,0.1)';
+    ctx.fillRect(rnd() * s, rnd() * s, 2, 2);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = maxAnisotropy;
+  return tex;
+}
+
 export function createMaterials(renderer) {
-  const maxAnisotropy = Math.min(renderer?.capabilities.getMaxAnisotropy() ?? 4, 4);
+  const maxAnisotropy = Math.min(renderer?.capabilities.getMaxAnisotropy() ?? 4, 8);
+  const maps = createAtlasTextures(maxAnisotropy);
   const towerFog = config.world.towerFogScale;
 
   const lib = {
-    wall: {
-      house: facadeMaterial('house', maxAnisotropy),
-      old: facadeMaterial('old', maxAnisotropy),
-      office: facadeMaterial('office', maxAnisotropy),
-      glass: facadeMaterial('glass', maxAnisotropy),
-    },
-    plain: new THREE.MeshLambertMaterial({ vertexColors: true }),
-    awning: stripedMaterial(maxAnisotropy),
-    terrain: new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }),
-    tower: {
-      plain: patch(new THREE.MeshLambertMaterial({ vertexColors: true }), { fogScale: towerFog }),
-      glass: facadeMaterial('glass', maxAnisotropy, { fogScale: towerFog }),
-      heart: facadeMaterial('heart', maxAnisotropy, { fogScale: towerFog }),
-      lantern: patch(new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }), { fogScale: towerFog * 0.5 }),
-    },
+    city: atlasMaterial({ maps }),
+    tower: atlasMaterial({ maps, fogScale: towerFog }),
+    lantern: fogScaled(new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }), towerFog * 0.5),
+    terrain: new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, map: groundTexture(maxAnisotropy) }),
+    nature: new THREE.MeshLambertMaterial({ vertexColors: true }),
   };
-
-  /** Todos os materiais com janelas, para o LightingProfile ajustar o brilho. */
-  lib.windowMaterials = [...Object.values(lib.wall), lib.tower.glass, lib.tower.heart];
+  lib.windowMaterials = [lib.city, lib.tower];
   return lib;
 }
