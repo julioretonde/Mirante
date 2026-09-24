@@ -15,4 +15,15 @@ export default {
   'debug.launches': 'App launches',
   'debug.vibrate': 'Vibrate',
   'debug.close': 'Close',
+  'debug.triangles': 'Triangles',
+  'debug.height': 'Light height',
+  'debug.lightHeight': 'Light',
+  'debug.auto': 'Auto',
+
+  'view.rua': 'Street',
+  'view.telhados': 'Rooftops',
+  'view.aerea': 'Aerial',
+  'view.vidro': 'Glass',
+  'view.jardins': 'Gardens',
+  'view.topo': 'Summit',
 };

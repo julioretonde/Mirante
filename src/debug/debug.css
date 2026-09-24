@@ -51,3 +51,34 @@
   width: calc(var(--safe-left) + 64px);
   height: calc(var(--safe-top) + 64px);
 }
+
+.debug-panel {
+  max-height: calc(100% - var(--safe-top) - var(--safe-bottom) - 20px);
+  overflow-y: auto;
+  max-width: min(300px, 45vw);
+}
+
+.debug-info {
+  margin: 0 0 6px;
+  color: var(--ink-soft);
+}
+
+.debug-slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.debug-slider input {
+  flex: 1;
+  min-width: 60px;
+  accent-color: var(--accent);
+}
+
+.debug-views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}

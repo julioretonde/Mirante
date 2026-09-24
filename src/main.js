@@ -1,7 +1,8 @@
 import { initPlatform, isNative, Lifecycle, KeepAwake, Storage } from './platform/index.js';
 import { detectLanguage, setLanguage, t } from './i18n/index.js';
 import { Game } from './core/Game.js';
-import { PreviewWorld } from './world/PreviewWorld.js';
+import { World } from './world/World.js';
+import { ShowcaseCamera } from './camera/ShowcaseCamera.js';
 import { Dialog } from './ui/Dialog.js';
 import { PauseVeil } from './ui/PauseVeil.js';
 
@@ -34,8 +35,12 @@ async function main() {
   const launches = (await Storage.get('launches', 0)) + 1;
   await Storage.set('launches', launches);
 
-  const game = new Game(document.getElementById('game'));
-  game.setWorld(new PreviewWorld(game));
+  const canvas = document.getElementById('game');
+  const game = new Game(canvas);
+  const world = new World(game);
+  game.setWorld(world);
+  const showcase = new ShowcaseCamera(game.camera, canvas);
+  game.systems.push(showcase);
 
   const resumeGame = () => {
     pauseVeil.hide();
@@ -66,8 +71,8 @@ async function main() {
 
   if (__MIRANTE_DEBUG__) {
     const { installDebugPanel } = await import('./debug/DebugPanel.js');
-    installDebugPanel({ game, launches });
-    window.__mirante = { game };
+    installDebugPanel({ game, world, showcase, launches });
+    window.__mirante = { game, world, showcase };
   }
 
   document.documentElement.dataset.ready = 'true';

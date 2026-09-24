@@ -24,6 +24,8 @@ export class Game {
     this.camera = new THREE.PerspectiveCamera(config.render.fov, 1, config.render.near, config.render.far);
 
     this.world = null;
+    /** Sistemas atualizados antes do mundo a cada frame (câmera, jogador...). */
+    this.systems = [];
     this.paused = false;
     this.loop = new Loop((dt, t) => this.update(dt, t));
 
@@ -75,6 +77,7 @@ export class Game {
   }
 
   update(dt, t) {
+    for (const system of this.systems) system.update(dt, t);
     this.world?.update(dt, t);
     this.renderer.render(this.scene, this.camera);
     this.events.emit('frame', { dt, t });
