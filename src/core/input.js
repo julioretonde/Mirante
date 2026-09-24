@@ -90,6 +90,9 @@ export class Input {
   }
 
   _gesture(e) {
+    // Em toque, o navegador só libera áudio/tela cheia ao SOLTAR o dedo;
+    // mouse e teclado já valem ao apertar.
+    if (e && e.type === 'pointerdown' && e.pointerType === 'touch') return;
     if (this.onGesture) this.onGesture(e ? e.type : 'key');
   }
 
