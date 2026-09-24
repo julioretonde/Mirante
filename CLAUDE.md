@@ -46,6 +46,7 @@ Projeto na **raiz do repositório** (não numa subpasta `mirante/`).
     npm run snapshot       capturas 844×390 em snapshots/ (falha se houver erro no console)
     npm run android        build + cap sync + cap run android (emulador/aparelho)
     npm run android:open   build + cap sync + abre no Android Studio
+    npm run android:apk    build + cap sync + gradlew assembleDebug (checa erros de build nativo)
     npm run ios            build + cap sync + abre no Xcode (só no Mac)
     npm run assets         (Etapa 10) ícones e splash
 
@@ -87,9 +88,12 @@ excluídos de propósito. Se uma skill conflitar com o GDD (ex.: sugerir TypeScr
 - Idioma: qualquer variante `pt*` → pt-BR; qualquer outro → en.
 - No navegador, Esc funciona como botão voltar do Android.
 - Ao voltar do segundo plano, o jogo fica pausado até o próximo toque (GDD §2).
-- Desenvolvimento num container na nuvem, sem Android SDK (dl.google.com bloqueado) e sem aparelho.
-  Build/emulador Android rodam no computador do usuário (Windows). O Chromium local roda o snapshot
-  com SwiftShader (FPS baixo no headless é esperado).
+- Desenvolvimento num container na nuvem (efêmero), sem KVM: não roda emulador. O usuário liberou
+  dl.google.com; em cada sessão nova, rode `./scripts/cloud-android-sdk.sh` (instala SDK em ~/android-sdk
+  e usa o espelho do Maven Central do Google, pois repo.maven.apache.org responde 429) e depois
+  `npm run android:apk` antes de entregar etapas. Emulador/aparelho: no computador do usuário (Windows).
+  O Chromium local roda o snapshot com SwiftShader (FPS baixo no headless é esperado).
+- versionName 1.0.0 / versionCode 1 em android/app/build.gradle.
 
 ## Contexto do usuário
 
