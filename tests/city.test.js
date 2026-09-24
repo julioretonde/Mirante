@@ -98,3 +98,15 @@ describe('Terreno', () => {
     expect(Math.hypot(x1 - tx, z1 - tz)).toBeLessThan(config.world.towerPlazaRadius);
   });
 });
+
+describe('Relevo distante', () => {
+  it('fica em colinas plausíveis até o horizonte (sem paredões)', () => {
+    for (let r = 500; r <= 7000; r += 250) {
+      for (let a = 0; a < Math.PI * 2; a += Math.PI / 8) {
+        const h = terrainHeight(Math.cos(a) * r, Math.sin(a) * r);
+        expect(h).toBeLessThan(450);
+        expect(h).toBeGreaterThan(-60);
+      }
+    }
+  });
+});

@@ -9,7 +9,7 @@ Stack: Vite 8 + JavaScript (ES modules) + Three.js 0.186.0, empacotado com Capac
 
 ## Etapa atual
 
-**Etapa 1 – Mundo visível: concluída, aguardando feedback do usuário.**
+**Etapa 1 – Mundo visível: concluída + passe visual (atlas, formas, natureza, pós no Alto). Aguardando feedback.**
 Próxima: Etapa 2 – Personagem e controles (cachecol, joystick, câmera 3ª pessoa, andar/pular, vibração, teclado).
 Antes de começar cada etapa: apresentar plano curto e esperar aprovação (GDD §11).
 
@@ -30,15 +30,21 @@ Projeto na **raiz do repositório** (não numa subpasta `mirante/`).
       config.js             todos os valores de ajuste (render, mundo, cores, jogador)
       platform/             ÚNICO acesso a APIs nativas: env, Storage, Haptics, Lifecycle,
                             Orientation, StatusBar, KeepAwake, index.js (initPlatform)
-      core/                 Game (renderer/cena/câmera, systems[]), Loop, Events, Random (seed), dispose
+      core/                 Game (renderer/cena/câmera, systems[]), Loop, Events, Random (seed), dispose,
+                            Quality (presets baixa/media/alta, ?quality=), PostFX (bloom+vinheta, só Alta)
       camera/               ShowcaseCamera (vistas automáticas + OrbitControls; ?view=nome)
       world/                World (compõe tudo e aplica a luz por altura)
                             heightfield.js  terrainHeight(x,z) puro (vale em anfiteatro)
                             cityLayout.js   layout puro: bairros/zonas, ROUTE (corredor livre), guindastes
-                            geometry.js     GeometryBuilder (prisma/caixa/viga/cone/telhado, mescla)
-                            materials.js    fachadas em canvas, janelas acesas por hash, fog reduzido da torre
-                            CityGenerator   blocos de 200 m em THREE.LOD (perto detalhado, longe caixas)
-                            Props, Terrain, Clouds, Tower (definitiva), Sky (sol/estrelas/lua), Lighting
+                            atlas.js        atlas 4×4 em canvas (fachadas, loja, telha, calçada, grama...) + SLOT
+                            geometry.js     GeometryBuilder: use(slot), shade por vértice, splits, telhados,
+                                            blob (copas macias), append; atributo `atlas` por vértice
+                            materials.js    material-atlas único (fract+textureGrad), janelas por hash,
+                                            vidro com reflexo Fresnel do céu, fog reduzido da torre
+                            CityGenerator   blocos de 100 m em THREE.LOD: 1 malha perto (tudo), 1 longe
+                            Streets (rua principal de pedra + postes), Nature (bosques instanciados em LOD
+                            com vento, pedras, 3 cordilheiras), Ambient (pássaros, fumaça), Props (guindastes),
+                            Terrain (2 níveis), Clouds (tufos macios), Tower, Sky, Lighting (+ luz de preenchimento)
                             LightingProfile  6 faixas do GDD §3 interpoladas por altura
       ui/                   base.css, Dialog (confirmação), PauseVeil
       i18n/                 index.js (t, detectLanguage), pt-BR.js, en.js
@@ -56,6 +62,8 @@ Projeto na **raiz do repositório** (não numa subpasta `mirante/`).
     npm run android        build + cap sync + cap run android (emulador/aparelho)
     npm run android:open   build + cap sync + abre no Android Studio
     npm run android:apk    build + cap sync + gradlew assembleDebug (checa erros de build nativo)
+    npm run stats          draw calls/triângulos/texturas por vista no preset Médio (orçamento mobile:
+                           ≤150 calls, ≤300k tri). `node scripts/render-stats.mjs rua alta` para o Alto
     npm run ios            build + cap sync + abre no Xcode (só no Mac)
     npm run assets         (Etapa 10) ícones e splash
 
@@ -107,8 +115,13 @@ excluídos de propósito. Se uma skill conflitar com o GDD (ex.: sugerir TypeScr
   mirante (topo jogável) a 600 m, antena até 640 m. Zona 5 = arranha-céus (maior: 224 m de prédio);
   Zona 6 = terraços-jardim da própria torre (318/368/418 m); Zonas 7–8 = interior/exterior da torre.
 - Nomes de arquivo nunca podem diferir só por maiúsculas (Windows): por isso `heightfield.js` e `Terrain.js`.
-- Cidade: layout é dado puro testável; geometria mesclada por bloco e material (~70 draw calls, ~300k tri).
+- Cidade: layout é dado puro testável. Material-atlas único → 1 draw call por bloco (perto/longe).
+  Medido (Médio): ≤127 calls, ≤282k tri, 6 texturas; frames que refazem a sombra chegam a ~370k.
   LOD distante usa as mesmas fachadas (janelas acendem de longe = "mar de luzes").
+- Sombra: shadowMap.autoUpdate=false; refeita só quando o foco anda >6 m ou a luz gira >0,6°.
+- Estilo: low-poly com sombreamento macio — oclusão de contato por vértice no pé das paredes, copas com
+  normais de elipsoide, clareamento suave com a altura. Mediterrâneo: venezianas, telhas, varais,
+  ciprestes, bandeirinhas. Pós-processamento só no Alto (GDD §3); celular começa no Médio.
 - Janelas acendem por hash de (vão, andar) no shader; `windowUniforms.uLitRatio` controla a cidade toda.
 - Sem jogador ainda, a luz segue a altitude da câmera (o slider de debug fixa uma altura). Na Etapa 2+
   passa a seguir o jogador. A névoa afina conforme a câmera sobe.

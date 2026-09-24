@@ -15,7 +15,8 @@
     "android:open": "vite build && cap sync android && cap open android",
     "ios": "vite build && cap sync ios && cap open ios",
     "build:release": "vite build --mode release",
-    "android:apk": "vite build && cap sync android && node scripts/android-apk.mjs"
+    "android:apk": "vite build && cap sync android && node scripts/android-apk.mjs",
+    "stats": "node scripts/render-stats.mjs"
   },
   "dependencies": {
     "@capacitor-community/keep-awake": "8.0.1",
