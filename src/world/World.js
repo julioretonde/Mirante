@@ -8,6 +8,9 @@ import { createProfile, sampleProfile } from './LightingProfile.js';
 import { Lighting } from './Lighting.js';
 import { createMaterials, windowUniforms } from './materials.js';
 import { Props } from './Props.js';
+import { Nature } from './Nature.js';
+import { Streets } from './Streets.js';
+import { Ambient } from './Ambient.js';
 import { Sky } from './Sky.js';
 import { Terrain } from './Terrain.js';
 import { terrainHeight } from './heightfield.js';
@@ -34,21 +37,33 @@ export class World {
     game.scene.fog = new THREE.Fog('#f3d5bf', config.world.fogNear, config.world.fogFar);
 
     this.sky = new Sky();
-    this.lighting = new Lighting();
+    this.lighting = new Lighting(game.quality?.shadowMapSize);
     this.terrain = new Terrain(this.materials);
     this.city = new CityGenerator(this.layout, this.materials);
     this.props = new Props(this.layout, this.materials);
     this.tower = new Tower(this.materials);
     this.clouds = new Clouds();
+    this.nature = new Nature();
+    this.streets = new Streets(this.materials);
+    this.ambient = new Ambient(this.layout);
     this.root.add(
+      this.streets.mesh,
+      this.ambient.group,
       this.sky.group,
       this.lighting.group,
-      this.terrain.mesh,
+      this.terrain.group,
+      this.nature.group,
       this.city.group,
       this.props.group,
       this.tower.group,
       this.clouds.mesh,
     );
+
+    // Cidade estática: o mapa de sombra só é refeito quando o foco anda ou a luz muda
+    game.renderer.shadowMap.autoUpdate = false;
+    game.renderer.shadowMap.needsUpdate = true;
+    this._shadowFocus = new THREE.Vector3(Infinity, 0, 0);
+    this._shadowDirty = true;
 
     this.profile = createProfile();
     this.referenceHeight = null; // null = segue a câmera
@@ -75,15 +90,25 @@ export class World {
     const night = THREE.MathUtils.smoothstep(p.sunElevation, 2, -8);
     this._lightDir.copy(lowSun.normalize()).lerp(MOON_DIR, night).normalize();
 
+    // Sombra só é refeita se a direção da luz mudou de verdade (> ~0,6°)
+    if (!this._shadowLightDir || this._shadowLightDir.dot(this._lightDir) < 0.99995) {
+      this._shadowLightDir = this._lightDir.clone();
+      this._shadowDirty = true;
+    }
     this.sky.apply(p, this._sunDir);
     this.lighting.apply(p, this._lightDir);
     const fog = this.game.scene.fog;
     fog.color.copy(p.fog);
     this.game.renderer.toneMappingExposure = p.exposure;
 
-    windowUniforms.uLitRatio.value = p.windows * 0.5;
-    for (const m of this.materials.windowMaterials) m.emissiveIntensity = p.windows > 0.01 ? 0.4 + p.windows * 1.1 : 0;
-    this.materials.tower.heart.emissiveIntensity = 0.3 + p.windows * 1.6;
+    windowUniforms.uLitRatio.value = p.windows * 0.38;
+    windowUniforms.uSkyReflect.value.copy(p.skyHorizon).lerp(p.skyTop, 0.35);
+    for (const m of this.materials.windowMaterials) m.emissiveIntensity = p.windows > 0.01 ? 0.35 + p.windows * 0.85 : 0;
+
+    // Montanhas do horizonte: tom do céu, escurecendo à noite
+    for (const m of this.nature.ridgeMaterials) {
+      m.color.copy(p.hemiSky).multiplyScalar(Math.min(p.hemiIntensity / 1.7, 1.1)).lerp(p.fog, m.userData.haze);
+    }
 
     this.clouds.material.emissive.copy(p.cloudGlow);
     this.clouds.material.emissiveIntensity = p.cloudGlowIntensity;
@@ -106,7 +131,12 @@ export class World {
     if (this._fwd.lengthSq() > 1e-6) this._fwd.normalize();
     this._focus.copy(cam.position).addScaledVector(this._fwd, 45);
     this._focus.y = terrainHeight(this._focus.x, this._focus.z);
-    this.lighting.follow(this._focus);
+    if (this._shadowDirty || this._focus.distanceToSquared(this._shadowFocus) > 36) {
+      this.lighting.follow(this._focus);
+      this._shadowFocus.copy(this._focus);
+      this._shadowDirty = false;
+      this.game.renderer.shadowMap.needsUpdate = true;
+    }
 
     // Lá do alto a névoa afina: dá para ver o caminho percorrido
     const fog = this.game.scene.fog;
@@ -117,6 +147,8 @@ export class World {
     this.sky.update(cam);
     this.tower.update(t, this.profile.stars);
     this.clouds.update(t);
+    this.nature.update(t);
+    this.ambient.update(dt, t, this.profile);
   }
 
   dispose() {

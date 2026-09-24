@@ -3,7 +3,7 @@ import { config } from '../config.js';
 
 /** Uma luz direcional com sombra (caixa pequena que segue um ponto) + luz hemisférica. */
 export class Lighting {
-  constructor() {
+  constructor(shadowMapSize = config.render.shadowMapSize) {
     this.group = new THREE.Group();
     this.direction = new THREE.Vector3(0, 1, 0);
 
@@ -12,7 +12,7 @@ export class Lighting {
 
     this.sun = new THREE.DirectionalLight('#ffffff', 2);
     this.sun.castShadow = true;
-    const size = config.render.shadowMapSize;
+    const size = shadowMapSize;
     this.sun.shadow.mapSize.set(size, size);
     const cam = this.sun.shadow.camera;
     const box = config.render.shadowBox;
@@ -21,10 +21,14 @@ export class Lighting {
     cam.top = box;
     cam.bottom = -box;
     cam.near = 1;
-    cam.far = 800;
+    cam.far = 520;
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.05;
     this.group.add(this.sun, this.sun.target);
+
+    // Luz de preenchimento/contraluz fria, do lado oposto (dá forma às faces à sombra)
+    this.fill = new THREE.DirectionalLight('#9fb6d8', 0.35);
+    this.group.add(this.fill, this.fill.target);
     this._focus = new THREE.Vector3();
   }
 
@@ -35,6 +39,8 @@ export class Lighting {
     this.hemi.color.copy(profile.hemiSky);
     this.hemi.groundColor.copy(profile.hemiGround);
     this.hemi.intensity = profile.hemiIntensity;
+    this.fill.color.copy(profile.skyTop);
+    this.fill.intensity = 0.25 + profile.lightIntensity * 0.12;
     this.follow(this._focus);
   }
 
@@ -42,6 +48,8 @@ export class Lighting {
   follow(point) {
     this._focus.copy(point);
     this.sun.target.position.copy(point);
-    this.sun.position.copy(point).addScaledVector(this.direction, 400);
+    this.sun.position.copy(point).addScaledVector(this.direction, 300);
+    this.fill.target.position.copy(point);
+    this.fill.position.set(point.x - this.direction.x * 400, point.y + 250, point.z - this.direction.z * 400);
   }
 }

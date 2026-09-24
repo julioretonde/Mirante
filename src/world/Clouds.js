@@ -12,12 +12,9 @@ export class Clouds {
     const puff = mergePuff();
     this.material = new THREE.MeshLambertMaterial({
       color: '#ffffff',
+      vertexColors: true,
       emissive: new THREE.Color('#ffd9c2'),
       emissiveIntensity: 0.35,
-      flatShading: true,
-      transparent: true,
-      opacity: 0.88,
-      depthWrite: false,
     });
     const items = [];
     const [tx, tz] = config.world.towerPosition;
@@ -56,23 +53,36 @@ export class Clouds {
   }
 }
 
+/** Tufo macio: esferas suaves agrupadas, base achatada e mais escura (volume sem custo de luz). */
 function mergePuff() {
   const parts = [
     [0, 0, 0, 1],
-    [0.8, -0.1, 0.2, 0.75],
-    [-0.8, -0.15, -0.1, 0.7],
-    [0.3, 0.35, -0.3, 0.65],
-    [-0.35, 0.25, 0.35, 0.6],
+    [0.85, -0.12, 0.15, 0.72],
+    [-0.85, -0.15, -0.1, 0.7],
+    [0.35, 0.38, -0.25, 0.62],
+    [-0.4, 0.28, 0.3, 0.58],
+    [1.45, -0.28, -0.1, 0.45],
+    [-1.4, -0.3, 0.12, 0.42],
   ];
   const positions = [];
+  const normals = [];
+  const colors = [];
   for (const [x, y, z, r] of parts) {
-    const g = new THREE.IcosahedronGeometry(r, 0).toNonIndexed();
-    g.translate(x, y, z);
-    positions.push(...g.attributes.position.array);
+    const g = new THREE.SphereGeometry(r, 12, 8).toNonIndexed();
+    const p = g.attributes.position;
+    const n = g.attributes.normal;
+    for (let i = 0; i < p.count; i++) {
+      const py = Math.max(p.getY(i) + y, -0.32); // base achatada
+      positions.push(p.getX(i) + x, py, p.getZ(i) + z);
+      normals.push(n.getX(i), n.getY(i), n.getZ(i));
+      const k = 0.72 + 0.28 * THREE.MathUtils.smoothstep(py, -0.32, 0.7);
+      colors.push(k, k, k * 1.02);
+    }
     g.dispose();
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geo.computeVertexNormals();
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   return geo;
 }

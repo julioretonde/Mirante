@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { config } from '../config.js';
+import { SLOT } from './atlas.js';
 import { GeometryBuilder, chamferRect, circle } from './geometry.js';
 
 /**
@@ -28,15 +29,17 @@ export class Tower {
     this.center = new THREE.Vector3(tx, B, tz);
     this.group = new THREE.Group();
 
-    const plain = new GeometryBuilder();
-    const glass = new GeometryBuilder();
-    const heart = new GeometryBuilder();
+    const plain = new GeometryBuilder().use(SLOT.plaster);
+    const glass = new GeometryBuilder().use(SLOT.glass);
+    const heart = new GeometryBuilder().use(SLOT.heart);
     const lantern = new GeometryBuilder();
+    const lamps = new GeometryBuilder().use(SLOT.lamp);
 
     const oct = (size, c) => chamferRect(tx, tz, size, size, c);
 
     // Praça e base de pedra
-    plain.prism(circle(tx, tz, config.world.towerPlazaRadius, 16), B - 4, B + 0.3, STONE_DARK, { topColor: '#e4d6c2' });
+    plain.prism(circle(tx, tz, config.world.towerPlazaRadius, 24), B - 4, B + 0.3, STONE_DARK, { topColor: '#e4d6c2', topSlot: SLOT.paving });
+    plain.prism(circle(tx, tz, 50, 16), B + 0.3, B + 0.8, STONE, { topColor: '#efe4d4', topSlot: SLOT.paving });
     plain.prism(oct(84, 16), B - 1, 90, STONE, { topColor: STONE_LIGHT });
     plain.prism(oct(88, 17), 90, 92, STONE_LIGHT);
     // Portais nos quatro lados
@@ -78,11 +81,13 @@ export class Tower {
         if (rnd() < 0.6) {
           const s = 0.8 + rnd() * 0.7;
           plain.box(x, t.y + 3 + s, z, 0.5 * s, 2 * s, 0.5 * s, '#8a6a55');
-          plain.cone(x, t.y + 3 + s * 1.4, z, 2.2 * s, 5 * s, 6, rnd() < 0.5 ? GARDEN : GARDEN_DARK);
+          plain.blob(x, t.y + 3 + s * 3.2, z, 2.2 * s, 2 * s, 2.2 * s, rnd() < 0.5 ? GARDEN : GARDEN_DARK, 0, 0.2, i);
         } else {
           plain.box(x, t.y + 3.4, z, 2.4, 0.8, 1.2, LAVENDER);
         }
       }
+      // Colar de lanternas na borda do terraço (acende ao anoitecer)
+      for (const [lx, lz] of oct(t.outer + 0.4, t.c)) lamps.box(lx, t.y + 3.4, lz, 0.8, 0.8, 0.8, '#fff0c8');
       const edge = oct(t.outer - 0.2, t.c);
       for (let i = 0; i < edge.length; i++) {
         const [ax, az] = edge[i];
@@ -145,10 +150,8 @@ export class Tower {
       this.group.add(mesh);
       return mesh;
     };
-    add(plain, materials.tower.plain);
-    add(glass, materials.tower.glass);
-    add(heart, materials.tower.heart);
-    add(lantern, materials.tower.lantern, false);
+    add(plain.append(glass).append(heart).append(lamps), materials.tower);
+    add(lantern, materials.lantern, false);
 
     this.#buildBeacon(tx, tz);
   }

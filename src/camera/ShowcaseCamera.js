@@ -12,7 +12,7 @@ export const VIEWS = {
   aerea: { position: [620, 360, 520], target: [0, 70, -60] },
   vidro: { position: [165, 150, -40], target: [0, 420, -320] },
   jardins: { position: [80, 380, -205], target: [0, 430, -320] },
-  topo: { position: [10, 607, -304], target: [0, 300, 520] },
+  topo: { position: [10, 607, -304], target: [0, 190, 380] },
 };
 export const VIEW_ORDER = ['rua', 'telhados', 'aerea', 'vidro', 'jardins', 'topo'];
 
