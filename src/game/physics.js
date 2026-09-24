@@ -318,7 +318,7 @@ export function simulateJump(world, start, charge, dir, opts = {}) {
     const ev = stepBody(b, world, 0);
     if (path) path.push(b.x, b.y);
     if (ev & EV_SPLAT) splat = true;
-    if (goal && !touchedGoal && touchesRect(b, goal)) touchedGoal = true;
+    if (goal && !touchedGoal && b.onGround && touchesRect(b, goal)) touchedGoal = true;
     if (b.onGround && b.vx === 0) break;
   }
   return { body: b, frames, touchedGoal, splat, path };

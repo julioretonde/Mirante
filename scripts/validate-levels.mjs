@@ -125,7 +125,8 @@ function runUntilRest(holdDir, holdFrames) {
   const goal = world.goal;
   for (let f = 0; f < MAX_SIM_FRAMES; f++) {
     stepBody(body, world, f < holdFrames ? holdDir : 0);
-    if (touchesRect(body, goal)) return GOAL;
+    // a estrela só conta com o cavaleiro de pé ao lado dela (igual ao jogo)
+    if (body.onGround && touchesRect(body, goal)) return GOAL;
     if (f >= holdFrames - 1 && body.onGround && body.vx === 0) return stateOf(body.x, body.y);
   }
   warnings.push(`simulação não terminou em (${body.x.toFixed(1)}, ${body.y.toFixed(1)})`);
@@ -266,6 +267,14 @@ for (let id = 0; id < nStates; id++) {
 }
 for (let s = 0; s < world.count; s++) {
   if (!visited[s]) errors.push(`Tela ${s + 1} (${SCREENS[s].name}) nunca é alcançada.`);
+}
+// Se nem a estrela é alcançável, todas as posições ficam "sem saída": em vez de
+// listar tudo, mostra até onde dá para chegar.
+if (!reachesGoal[START]) {
+  let top = 0;
+  for (let id = 0; id < nStates; id++) top = Math.max(top, screenOf[id]);
+  errors.push(`A tela mais alta alcançada é a ${top + 1} (${SCREENS[top].name}). Verifique a saída dela para a tela ${top + 2}.`);
+  stuckByScreen.clear();
 }
 for (const [s, ids] of stuckByScreen) {
   const rowsSet = new Set(ids.map((id) => (sy[id] + PH) / TILE - world.screenTopRow(s)));

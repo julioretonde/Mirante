@@ -384,8 +384,8 @@ export class Game {
     const s = this.world.screenAtY(b.y + P.PLAYER_H / 2);
     if (s !== this.screen) this._changeScreen(s);
 
-    // objetivo final
-    if (this.world.goal && touchesRect(b, this.world.goal)) this._startEnding();
+    // objetivo final: é preciso POUSAR ao lado da estrela
+    if (this.world.goal && b.onGround && touchesRect(b, this.world.goal)) this._startEnding();
 
     // prévia de trajetória no modo debug
     this.preview = null;
