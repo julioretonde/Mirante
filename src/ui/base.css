@@ -1,0 +1,173 @@
+/* Base de tela cheia para celular: sem zoom, scroll, seleção, menu de toque longo ou bounce. */
+
+:root {
+  --safe-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --safe-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+  --safe-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+
+  --ink: #fff6ea;
+  --ink-soft: rgba(255, 246, 234, 0.72);
+  --paper: rgba(58, 40, 52, 0.55);
+  --paper-strong: rgba(48, 32, 44, 0.82);
+  --lantern: #ffd29a;
+  --accent: #ff9e5e;
+  --accent-2: #f2c14e;
+  --secret: #5ec8c0;
+  --radius: 14px;
+
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  color: var(--ink);
+  background: #2b2140;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+#game {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  outline: none;
+}
+
+/* Camada de UI: ocupa a tela, mas só os filhos recebem toque. */
+#ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#ui > * {
+  pointer-events: auto;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* Painel de papel translúcido: vidro fosco sutil, com fallback sólido. */
+.paper {
+  background: var(--paper-strong);
+  border: 1px solid rgba(255, 210, 154, 0.22);
+  border-radius: var(--radius);
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .paper {
+    background: var(--paper);
+    -webkit-backdrop-filter: blur(10px) saturate(1.1);
+    backdrop-filter: blur(10px) saturate(1.1);
+  }
+}
+
+.lantern-btn {
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  background: rgba(255, 210, 154, 0.14);
+  border: 1px solid rgba(255, 210, 154, 0.45);
+  color: var(--ink);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.lantern-btn:active {
+  background: rgba(255, 210, 154, 0.3);
+}
+
+.lantern-btn.primary {
+  background: rgba(255, 158, 94, 0.32);
+  border-color: rgba(255, 158, 94, 0.8);
+}
+
+/* Diálogo modal (ex.: confirmar saída) */
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(20, 12, 24, 0.45);
+  padding: calc(var(--safe-top) + 16px) calc(var(--safe-right) + 16px) calc(var(--safe-bottom) + 16px)
+    calc(var(--safe-left) + 16px);
+}
+
+.modal {
+  min-width: min(340px, 90vw);
+  max-width: 90vw;
+  padding: 22px 24px 18px;
+  text-align: center;
+}
+
+.modal p {
+  margin: 0 0 18px;
+  font-size: 18px;
+}
+
+.modal .actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* Aviso para girar o aparelho (só aparece no navegador em retrato) */
+.rotate-hint {
+  position: absolute;
+  inset: 0;
+  display: none;
+  place-items: center;
+  text-align: center;
+  padding: 24px;
+  background: #2b2140;
+  font-size: 18px;
+  color: var(--ink-soft);
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  .rotate-hint.enabled {
+    display: grid;
+  }
+}
+
+/* Véu de pausa */
+.pause-veil {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(30, 18, 34, 0.5);
+  font-size: 20px;
+  letter-spacing: 0.04em;
+}
+
+[hidden] {
+  display: none !important;
+}

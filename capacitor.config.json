@@ -1,0 +1,26 @@
+{
+  "appId": "com.seuestudio.mirante",
+  "appName": "Mirante",
+  "webDir": "dist",
+  "backgroundColor": "#2b2140",
+  "android": {
+    "backgroundColor": "#2b2140"
+  },
+  "ios": {
+    "backgroundColor": "#2b2140",
+    "contentInset": "never"
+  },
+  "plugins": {
+    "SystemBars": {
+      "hidden": true,
+      "style": "DARK",
+      "insetsHandling": "css"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 600,
+      "launchAutoHide": true,
+      "backgroundColor": "#2b2140",
+      "showSpinner": false
+    }
+  }
+}
